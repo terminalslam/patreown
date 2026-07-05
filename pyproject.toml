@@ -1,0 +1,16 @@
+[project]
+name = "patreown"
+version = "0.1.0"
+description = "A personal offline archive tool for Patreon videos you already have access to."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "typer>=0.12.0",
+]
+
+[project.scripts]
+patreown = "patreown.cli:app"
+
+[build-system]
+requires = ["setuptools>=69.0"]
+build-backend = "setuptools.build_meta"
