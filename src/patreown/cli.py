@@ -5,6 +5,7 @@ import typer
 
 from patreown import __version__
 from patreown.downloader import DEFAULT_DOWNLOAD_DIR, download_file
+from patreown.patreon import parse_patreon_post_url
 
 app = typer.Typer(
     name="patreown",
@@ -46,3 +47,23 @@ def download(
         raise typer.BadParameter(f"Request failed: {error}") from error
 
     typer.echo(f"Downloaded to {output_path}")
+
+# Inspect Command
+
+@app.command()
+def inspect(
+    url: str = typer.Argument(..., help="URL to inspect."),
+) -> None:
+    """Inspect a URL and show what Patreown can detect."""
+
+    post = parse_patreon_post_url(url)
+
+    if post is None:
+        typer.echo("No supported URL detected.")
+        raise typer.Exit(code=1)
+
+    typer.echo("Patreon post detected")
+    typer.echo(f"Creator: {post.creator_slug}")
+    typer.echo(f"Post slug: {post.post_slug}")
+    typer.echo(f"Post ID: {post.post_id}")
+    typer.echo(f"Clean URL: {post.clean_url}")
