@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from urllib.parse import urlunparse, urlparse
 
+import requests
 
 @dataclass(frozen=True)
 class PatreonPostUrl:
