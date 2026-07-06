@@ -53,6 +53,11 @@ def download(
 @app.command()
 def inspect(
     url: str = typer.Argument(..., help="URL to inspect."),
+    fetch: bool = typer.Option(
+        False,
+        "--fetch",
+        help="Fetch the Patreon post page and show basic response info.",
+    ),
 ) -> None:
     """Inspect a URL and show what Patreown can detect."""
 
@@ -67,3 +72,19 @@ def inspect(
     typer.echo(f"Post slug: {post.post_slug}")
     typer.echo(f"Post ID: {post.post_id}")
     typer.echo(f"Clean URL: {post.clean_url}")
+
+    if not fetch:
+        return
+
+    try:
+        result = fetch_patreon_post_html(post)
+    except requests.HTTPError as error:
+        raise typer.BadParameter(f"Fetch failed: {error}") from error
+    except requests.RequestException as error:
+        raise typer.BadParameter(f"Request failed: {error}") from error
+
+    typer.echo("")
+    typer.echo("Fetch result")
+    typer.echo(f"Status: {result.status_code}")
+    typer.echo(f"Content type: {result.content_type}")
+    typer.echo(f"Size: {len(result.text)} bytes")
