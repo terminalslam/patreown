@@ -5,7 +5,11 @@ import typer
 
 from patreown import __version__
 from patreown.downloader import DEFAULT_DOWNLOAD_DIR, download_file
-from patreown.patreon import fetch_patreon_post_html, parse_patreon_post_url
+from patreown.patreon import (
+    extract_patreon_post_metadata,
+    fetch_patreon_post_html,
+    parse_patreon_post_url,
+)
 
 app = typer.Typer(
     name="patreown",
@@ -93,6 +97,18 @@ def inspect(
     typer.echo(f"Status: {result.status_code}")
     typer.echo(f"Content type: {result.content_type}")
     typer.echo(f"Size: {len(result.text)} bytes")
+
+    metadata = extract_patreon_post_metadata(result.text)
+
+    if metadata is not None:
+        typer.echo("")
+        typer.echo("Post metadata")
+        typer.echo(f"Title: {metadata.title}")
+        typer.echo(f"Type: {metadata.object_type}")
+        typer.echo(f"Duration: {metadata.duration}")
+        typer.echo(f"Upload date: {metadata.upload_date}")
+        typer.echo(f"Accessible for free: {metadata.is_accessible_for_free}")
+        typer.echo(f"Thumbnail URL: {metadata.thumbnail_url}")
 
     if save_html:
         debug_dir = Path("debug")

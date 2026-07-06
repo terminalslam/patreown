@@ -1,4 +1,6 @@
+import json
 from dataclasses import dataclass
+from html.parser import HTMLParser
 from urllib.parse import urlparse, urlunparse
 
 import requests
@@ -17,6 +19,16 @@ class PatreonFetchResult:
     status_code: int
     content_type: str
     text: str
+
+
+@dataclass(frozen=True)
+class PatreonPostMetadata:
+    title: str | None
+    object_type: str | None
+    duration: str | None
+    upload_date: str | None
+    is_accessible_for_free: bool | None
+    thumbnail_url: str | None
 
 
 def parse_patreon_post_url(url: str) -> PatreonPostUrl | None:
@@ -63,3 +75,64 @@ def fetch_patreon_post_html(post: PatreonPostUrl) -> PatreonFetchResult:
         content_type=response.headers.get("content-type", ""),
         text=response.text,
     )
+
+
+class JsonLdParser(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__()
+        self._inside_json_ld = False
+        self._current_data: list[str] = []
+        self.scripts: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag != "script":
+            return
+
+        attrs_dict = dict(attrs)
+
+        if attrs_dict.get("type") == "application/ld+json":
+            self._inside_json_ld = True
+            self._current_data = []
+
+    def handle_data(self, data: str) -> None:
+        if self._inside_json_ld:
+            self._current_data.append(data)
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag != "script" or not self._inside_json_ld:
+            return
+
+        self._inside_json_ld = False
+        self.scripts.append("".join(self._current_data))
+        self._current_data = []
+
+
+def extract_patreon_post_metadata(html: str) -> PatreonPostMetadata | None:
+    parser = JsonLdParser()
+    parser.feed(html)
+
+    for script in parser.scripts:
+        try:
+            data = json.loads(script)
+        except json.JSONDecodeError:
+            continue
+
+        items = data if isinstance(data, list) else [data]
+
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+
+            if item.get("@type") != "VideoObject":
+                continue
+
+            return PatreonPostMetadata(
+                title=item.get("name"),
+                object_type=item.get("@type"),
+                duration=item.get("duration"),
+                upload_date=item.get("uploadDate"),
+                is_accessible_for_free=item.get("isAccessibleForFree"),
+                thumbnail_url=item.get("thumbnailUrl"),
+            )
+
+    return None
