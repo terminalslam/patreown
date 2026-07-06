@@ -58,6 +58,11 @@ def inspect(
         "--fetch",
         help="Fetch the Patreon post page and show basic response info.",
     ),
+    save_html: bool = typer.Option(
+        False,
+        "--save-html",
+        help="Save fetched Patreon HTML to the local debug directory.",
+    ),
 ) -> None:
     """Inspect a URL and show what Patreown can detect."""
 
@@ -88,3 +93,12 @@ def inspect(
     typer.echo(f"Status: {result.status_code}")
     typer.echo(f"Content type: {result.content_type}")
     typer.echo(f"Size: {len(result.text)} bytes")
+
+    if save_html:
+        debug_dir = Path("debug")
+        debug_dir.mkdir(parents=True, exist_ok=True)
+
+        html_path = debug_dir / f"patreon-{post.post_id}.html"
+        html_path.write_text(result.text, encoding="utf-8")
+
+        typer.echo(f"Saved HTML to {html_path}")
