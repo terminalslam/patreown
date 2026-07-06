@@ -31,6 +31,12 @@ class PatreonPostMetadata:
     thumbnail_url: str | None
 
 
+@dataclass(frozen=True)
+class MuxAssetHint:
+    playback_id: str
+    thumbnail_host: str
+
+
 def parse_patreon_post_url(url: str) -> PatreonPostUrl | None:
     parsed = urlparse(url)
 
@@ -136,3 +142,23 @@ def extract_patreon_post_metadata(html: str) -> PatreonPostMetadata | None:
             )
 
     return None
+
+
+def extract_mux_asset_hint(metadata: PatreonPostMetadata) -> MuxAssetHint | None:
+    if not metadata.thumbnail_url:
+        return None
+
+    parsed = urlparse(metadata.thumbnail_url)
+
+    if parsed.netloc != "image.mux.com":
+        return None
+
+    parts = [part for part in parsed.path.split("/") if part]
+
+    if not parts:
+        return None
+
+    return MuxAssetHint(
+        playback_id=parts[0],
+        thumbnail_host=parsed.netloc,
+    )
