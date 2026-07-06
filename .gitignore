@@ -8,3 +8,5 @@ build/
 
 downloads/
 .DS_Store
+
+debug/
