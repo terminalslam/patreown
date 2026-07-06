@@ -5,7 +5,7 @@ import typer
 
 from patreown import __version__
 from patreown.downloader import DEFAULT_DOWNLOAD_DIR, download_file
-from patreown.patreon import parse_patreon_post_url
+from patreown.patreon import fetch_patreon_post_html, parse_patreon_post_url
 
 app = typer.Typer(
     name="patreown",
