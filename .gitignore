@@ -10,3 +10,6 @@ downloads/
 .DS_Store
 
 debug/
+
+cookies.txt
+*.cookies.txt
