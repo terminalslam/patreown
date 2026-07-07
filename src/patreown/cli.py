@@ -67,6 +67,11 @@ def inspect(
         "--save-html",
         help="Save fetched Patreon HTML to the local debug directory.",
     ),
+    cookies: Path | None = typer.Option(
+        None,
+        "--cookies",
+        help="Path to a Netscape-format cookies.txt file for authenticated fetches.",
+    ),
 ) -> None:
     """Inspect a URL and show what Patreown can detect."""
 
@@ -86,7 +91,7 @@ def inspect(
         return
 
     try:
-        result = fetch_patreon_post_html(post)
+        result = fetch_patreon_post_html(post, cookies_path=cookies)
     except requests.HTTPError as error:
         raise typer.BadParameter(f"Fetch failed: {error}") from error
     except requests.RequestException as error:
@@ -114,7 +119,8 @@ def inspect(
         debug_dir = Path("debug")
         debug_dir.mkdir(parents=True, exist_ok=True)
 
-        html_path = debug_dir / f"patreon-{post.post_id}.html"
+        suffix = "-auth" if cookies is not None else ""
+        html_path = debug_dir / f"patreon-{post.post_id}{suffix}.html"
         html_path.write_text(result.text, encoding="utf-8")
 
         typer.echo(f"Saved HTML to {html_path}")

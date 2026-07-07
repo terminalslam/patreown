@@ -1,6 +1,8 @@
 import json
 from dataclasses import dataclass
 from html.parser import HTMLParser
+from http.cookiejar import MozillaCookieJar
+from pathlib import Path
 from urllib.parse import urlparse, urlunparse
 
 import requests
@@ -60,8 +62,18 @@ def parse_patreon_post_url(url: str) -> PatreonPostUrl | None:
     )
 
 
-def fetch_patreon_post_html(post: PatreonPostUrl) -> PatreonFetchResult:
-    response = requests.get(
+def fetch_patreon_post_html(
+    post: PatreonPostUrl,
+    cookies_path: Path | None = None,
+) -> PatreonFetchResult:
+    session = requests.Session()
+
+    if cookies_path is not None:
+        cookie_jar = MozillaCookieJar(cookies_path)
+        cookie_jar.load(ignore_discard=True, ignore_expires=True)
+        session.cookies.update(cookie_jar)
+
+    response = session.get(
         post.clean_url,
         headers={
             "User-Agent": "Patreown/0.1.0",
