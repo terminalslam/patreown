@@ -7,6 +7,7 @@ from patreown import __version__
 from patreown.downloader import DEFAULT_DOWNLOAD_DIR, download_file
 from patreown.patreon import (
     extract_patreon_post_metadata,
+    extract_patreon_video_sources,
     fetch_patreon_post_html,
     parse_patreon_post_url,
 )
@@ -52,7 +53,6 @@ def download(
 
     typer.echo(f"Downloaded to {output_path}")
 
-# Inspect Command
 
 @app.command()
 def inspect(
@@ -114,6 +114,16 @@ def inspect(
         typer.echo(f"Upload date: {metadata.upload_date}")
         typer.echo(f"Accessible for free: {metadata.is_accessible_for_free}")
         typer.echo(f"Thumbnail URL: {metadata.thumbnail_url}")
+
+    video_sources = extract_patreon_video_sources(result.text)
+
+    if video_sources.hls_urls:
+        typer.echo("")
+        typer.echo("Video sources")
+        typer.echo(f"HLS streams: {len(video_sources.hls_urls)}")
+
+        for index, hls_url in enumerate(video_sources.hls_urls, start=1):
+            typer.echo(f"{index}. {hls_url}")
 
     if save_html:
         debug_dir = Path("debug")

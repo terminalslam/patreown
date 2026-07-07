@@ -1,4 +1,6 @@
+import html
 import json
+import re
 from dataclasses import dataclass
 from html.parser import HTMLParser
 from http.cookiejar import MozillaCookieJar
@@ -31,6 +33,11 @@ class PatreonPostMetadata:
     upload_date: str | None
     is_accessible_for_free: bool | None
     thumbnail_url: str | None
+
+
+@dataclass(frozen=True)
+class PatreonVideoSources:
+    hls_urls: tuple[str, ...]
 
 
 def parse_patreon_post_url(url: str) -> PatreonPostUrl | None:
@@ -148,3 +155,16 @@ def extract_patreon_post_metadata(html: str) -> PatreonPostMetadata | None:
             )
 
     return None
+
+
+def extract_patreon_video_sources(page_html: str) -> PatreonVideoSources:
+    decoded_html = html.unescape(page_html)
+
+    hls_urls = re.findall(
+        r"https://stream\.mux\.com/[^\"' <]+?\.m3u8\?token=[^\"' <]+",
+        decoded_html,
+    )
+
+    return PatreonVideoSources(
+        hls_urls=tuple(dict.fromkeys(hls_urls)),
+    )
