@@ -6,7 +6,6 @@ import typer
 from patreown import __version__
 from patreown.downloader import DEFAULT_DOWNLOAD_DIR, download_file
 from patreown.patreon import (
-    extract_mux_asset_hint,
     extract_patreon_post_metadata,
     fetch_patreon_post_html,
     parse_patreon_post_url,
@@ -110,14 +109,6 @@ def inspect(
         typer.echo(f"Upload date: {metadata.upload_date}")
         typer.echo(f"Accessible for free: {metadata.is_accessible_for_free}")
         typer.echo(f"Thumbnail URL: {metadata.thumbnail_url}")
-
-        mux_hint = extract_mux_asset_hint(metadata)
-
-        if mux_hint is not None:
-            typer.echo("")
-            typer.echo("Mux asset hint")
-            typer.echo(f"Playback ID: {mux_hint.playback_id}")
-            typer.echo(f"Thumbnail host: {mux_hint.thumbnail_host}")
 
     if save_html:
         debug_dir = Path("debug")
