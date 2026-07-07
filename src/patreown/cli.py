@@ -5,6 +5,7 @@ import typer
 
 from patreown import __version__
 from patreown.downloader import DEFAULT_DOWNLOAD_DIR, download_file
+from patreown.hls import HlsDownloadError, download_hls_stream
 from patreown.patreon import (
     extract_patreon_post_metadata,
     extract_patreon_video_sources,
@@ -151,3 +152,70 @@ def inspect(
         html_path.write_text(result.text, encoding="utf-8")
 
         typer.echo(f"Saved HTML to {html_path}")
+
+
+def _safe_filename(value: str) -> str:
+    safe_value = "".join(
+        character if character.isalnum() or character in {"-", "_"} else "-"
+        for character in value.lower()
+    )
+    return "-".join(part for part in safe_value.split("-") if part)
+
+
+@app.command("download-post")
+def download_post(
+    url: str = typer.Argument(..., help="Patreon post URL to download."),
+    cookies: Path = typer.Option(
+        ...,
+        "--cookies",
+        help="Path to a Netscape-format cookies.txt file for authenticated fetches.",
+    ),
+    output_dir: Path = typer.Option(
+        DEFAULT_DOWNLOAD_DIR,
+        "--output-dir",
+        "-o",
+        help="Directory where the video should be saved.",
+    ),
+) -> None:
+    """Download the main video from a Patreon post."""
+
+    post = parse_patreon_post_url(url)
+
+    if post is None:
+        typer.echo("No supported Patreon post URL detected.")
+        raise typer.Exit(code=1)
+
+    typer.echo("Patreon post detected")
+    typer.echo(f"Creator: {post.creator_slug}")
+    typer.echo(f"Post ID: {post.post_id}")
+
+    try:
+        result = fetch_patreon_post_html(post, cookies_path=cookies)
+    except requests.HTTPError as error:
+        raise typer.BadParameter(f"Fetch failed: {error}") from error
+    except requests.RequestException as error:
+        raise typer.BadParameter(f"Request failed: {error}") from error
+
+    metadata = extract_patreon_post_metadata(result.text)
+    video_sources = extract_patreon_video_sources(result.text)
+
+    if video_sources.main_hls_url is None:
+        raise typer.BadParameter("No main Patreon video source found.")
+
+    title = metadata.title if metadata is not None and metadata.title else post.post_slug
+    filename = f"{_safe_filename(title)}-{post.post_id}.mp4"
+    output_path = output_dir / post.creator_slug / filename
+
+    typer.echo("Main video source found")
+    typer.echo(f"Downloading to {output_path}")
+
+    try:
+        downloaded_path = download_hls_stream(
+            video_sources.main_hls_url,
+            output_path,
+            referer=post.clean_url,
+        )
+    except HlsDownloadError as error:
+        raise typer.BadParameter(str(error)) from error
+
+    typer.echo(f"Downloaded to {downloaded_path}")
