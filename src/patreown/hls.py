@@ -31,6 +31,10 @@ def download_hls_stream(
 
     command = [
         ffmpeg_path,
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-stats",
         "-n",
         "-user_agent",
         DEFAULT_FFMPEG_USER_AGENT,
