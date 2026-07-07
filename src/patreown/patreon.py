@@ -37,6 +37,8 @@ class PatreonPostMetadata:
 
 @dataclass(frozen=True)
 class PatreonVideoSources:
+    main_hls_url: str | None
+    preview_hls_url: str | None
     hls_urls: tuple[str, ...]
 
 
@@ -165,6 +167,23 @@ def extract_patreon_video_sources(page_html: str) -> PatreonVideoSources:
         decoded_html,
     )
 
+    main_hls_url = _extract_named_hls_url(decoded_html, "post_file")
+    preview_hls_url = _extract_named_hls_url(decoded_html, "video_preview")
+
     return PatreonVideoSources(
+        main_hls_url=main_hls_url,
+        preview_hls_url=preview_hls_url,
         hls_urls=tuple(dict.fromkeys(hls_urls)),
     )
+
+
+def _extract_named_hls_url(page_html: str, field_name: str) -> str | None:
+    match = re.search(
+        rf'"{field_name}":\{{.*?"url":"(https://stream\.mux\.com/[^"]+?\.m3u8\?token=[^"]+)"',
+        page_html,
+    )
+
+    if match is None:
+        return None
+
+    return match.group(1)

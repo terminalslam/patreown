@@ -120,7 +120,24 @@ def inspect(
     if video_sources.hls_urls:
         typer.echo("")
         typer.echo("Video sources")
+        typer.echo(
+            "Main video: "
+            f"{'found' if video_sources.main_hls_url is not None else 'not found'}"
+        )
+        typer.echo(
+            "Preview video: "
+            f"{'found' if video_sources.preview_hls_url is not None else 'not found'}"
+        )
         typer.echo(f"HLS streams: {len(video_sources.hls_urls)}")
+
+        if video_sources.main_hls_url is not None:
+            typer.echo(f"Main URL: {video_sources.main_hls_url}")
+
+        if video_sources.preview_hls_url is not None:
+            typer.echo(f"Preview URL: {video_sources.preview_hls_url}")
+
+        typer.echo("")
+        typer.echo("All HLS streams")
 
         for index, hls_url in enumerate(video_sources.hls_urls, start=1):
             typer.echo(f"{index}. {hls_url}")
