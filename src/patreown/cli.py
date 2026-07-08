@@ -73,6 +73,11 @@ def inspect(
         "--cookies",
         help="Path to a Netscape-format cookies.txt file for authenticated fetches.",
     ),
+    show_source_urls: bool = typer.Option(
+        False,
+        "--show-source-urls",
+        help="Print signed Patreon/Mux media URLs. Hidden by default.",
+    ),
 ) -> None:
     """Inspect a URL and show what Patreown can detect."""
 
@@ -114,7 +119,13 @@ def inspect(
         typer.echo(f"Duration: {metadata.duration}")
         typer.echo(f"Upload date: {metadata.upload_date}")
         typer.echo(f"Accessible for free: {metadata.is_accessible_for_free}")
-        typer.echo(f"Thumbnail URL: {metadata.thumbnail_url}")
+        typer.echo(
+            "Thumbnail: "
+            f"{'found' if metadata.thumbnail_url is not None else 'not found'}"
+        )
+
+        if show_source_urls and metadata.thumbnail_url is not None:
+            typer.echo(f"Thumbnail URL: {metadata.thumbnail_url}")
 
     video_sources = extract_patreon_video_sources(result.text)
 
@@ -131,17 +142,18 @@ def inspect(
         )
         typer.echo(f"HLS streams: {len(video_sources.hls_urls)}")
 
-        if video_sources.main_hls_url is not None:
-            typer.echo(f"Main URL: {video_sources.main_hls_url}")
+        if show_source_urls:
+            if video_sources.main_hls_url is not None:
+                typer.echo(f"Main URL: {video_sources.main_hls_url}")
 
-        if video_sources.preview_hls_url is not None:
-            typer.echo(f"Preview URL: {video_sources.preview_hls_url}")
+            if video_sources.preview_hls_url is not None:
+                typer.echo(f"Preview URL: {video_sources.preview_hls_url}")
 
-        typer.echo("")
-        typer.echo("All HLS streams")
+            typer.echo("")
+            typer.echo("All HLS streams")
 
-        for index, hls_url in enumerate(video_sources.hls_urls, start=1):
-            typer.echo(f"{index}. {hls_url}")
+            for index, hls_url in enumerate(video_sources.hls_urls, start=1):
+                typer.echo(f"{index}. {hls_url}")
 
     if save_html:
         debug_dir = Path("debug")
